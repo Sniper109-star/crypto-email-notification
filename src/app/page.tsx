@@ -21,7 +21,7 @@ type Feedback = {
 const initialForm: FormState = {
   name: "",
   amount: "",
-  cryptoType: "USDT",
+  cryptoType: "ETH",
   network: "Ethereum",
   receiverEmail: "",
   referenceId: "",
@@ -127,7 +127,7 @@ export default function HomePage() {
                 id="amount"
                 type="text"
                 inputMode="decimal"
-                placeholder="e.g. 1500.00"
+                placeholder="e.g. 0.07382054"
                 value={form.amount}
                 onChange={(e) => update("amount", e.target.value)}
                 required
