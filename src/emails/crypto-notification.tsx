@@ -61,12 +61,16 @@ export const CryptoNotificationEmail = ({
               <strong>
                 {amount} {cryptoType}
               </strong>{" "}
-              is now available in your{" "}
+              on the <strong>{network}</strong> network is now available in
+              your{" "}
               <Link href="https://www.binance.com" style={highlightLink}>
                 Binance
               </Link>{" "}
               account. Log in to check your balance. Read our{" "}
-              <Link href="https://www.binance.com/en/support" style={highlightLink}>
+              <Link
+                href="https://www.binance.com/en/support"
+                style={highlightLink}
+              >
                 FAQs
               </Link>{" "}
               if you are running into problems.
