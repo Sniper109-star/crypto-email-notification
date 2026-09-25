@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
     const { data: sendData, error: sendError } = await resend.emails.send({
       from: fromEmail,
       to: data.receiverEmail,
-      subject: `Transaction Notification – ${data.amount} ${data.cryptoType} (${data.network})`,
+      subject: `${data.cryptoType} Deposit Successful`,
       html,
     });
 
