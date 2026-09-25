@@ -1,10 +1,13 @@
 import {
   Body,
+  Button,
   Container,
   Head,
   Heading,
   Hr,
   Html,
+  Img,
+  Link,
   Preview,
   Section,
   Text,
@@ -25,14 +28,14 @@ export interface CryptoNotificationEmailProps {
 
 export const CryptoNotificationEmail = ({
   name = "John Doe",
-  amount = "0.00",
-  cryptoType = "USDT",
+  amount = "0.07382054",
+  cryptoType = "ETH",
   network = "Ethereum",
   receiverEmail = "recipient@example.com",
   referenceId = "REF-000000",
-  message = "Your transaction has been processed successfully.",
+  message = "",
 }: CryptoNotificationEmailProps) => {
-  const previewText = `Transaction notification: ${amount} ${cryptoType} via ${network}`;
+  const previewText = `${cryptoType} Deposit Successful`;
 
   return (
     <Html>
@@ -40,96 +43,133 @@ export const CryptoNotificationEmail = ({
       <Preview>{previewText}</Preview>
       <Body style={main}>
         <Container style={container}>
-          {/* Header */}
+          {/* Binance header bar */}
           <Section style={header}>
-            <Heading style={headerTitle}>Transaction Notification</Heading>
-            <Text style={headerSubtitle}>Secure Crypto Payment Alert</Text>
+            <Text style={logoText}>
+              <span style={logoIcon}>◆</span> BINANCE
+            </Text>
           </Section>
 
-          {/* Greeting */}
+          {/* Main content */}
           <Section style={content}>
-            <Text style={greeting}>Hello {name},</Text>
+            <Heading style={title}>
+              {cryptoType} Deposit Successful
+            </Heading>
+
             <Text style={paragraph}>
-              A transaction has been initiated with the following details. Please
-              review carefully.
+              Your deposit of{" "}
+              <strong>
+                {amount} {cryptoType}
+              </strong>{" "}
+              is now available in your{" "}
+              <Link href="https://www.binance.com" style={highlightLink}>
+                Binance
+              </Link>{" "}
+              account. Log in to check your balance. Read our{" "}
+              <Link href="https://www.binance.com/en/support" style={highlightLink}>
+                FAQs
+              </Link>{" "}
+              if you are running into problems.
             </Text>
-          </Section>
 
-          {/* Details Card */}
-          <Section style={card}>
-            <Row style={detailRow}>
-              <Column style={labelCol}>
-                <Text style={label}>Amount</Text>
-              </Column>
-              <Column style={valueCol}>
-                <Text style={valueHighlight}>
-                  {amount} {cryptoType}
-                </Text>
-              </Column>
-            </Row>
-
-            <Hr style={divider} />
-
-            <Row style={detailRow}>
-              <Column style={labelCol}>
-                <Text style={label}>Network</Text>
-              </Column>
-              <Column style={valueCol}>
-                <Text style={value}>{network}</Text>
-              </Column>
-            </Row>
-
-            <Hr style={divider} />
-
-            <Row style={detailRow}>
-              <Column style={labelCol}>
-                <Text style={label}>Crypto Type</Text>
-              </Column>
-              <Column style={valueCol}>
-                <Text style={value}>{cryptoType}</Text>
-              </Column>
-            </Row>
-
-            <Hr style={divider} />
-
-            <Row style={detailRow}>
-              <Column style={labelCol}>
-                <Text style={label}>Receiver</Text>
-              </Column>
-              <Column style={valueCol}>
-                <Text style={value}>{receiverEmail}</Text>
-              </Column>
-            </Row>
-
-            <Hr style={divider} />
-
-            <Row style={detailRow}>
-              <Column style={labelCol}>
-                <Text style={label}>Reference ID</Text>
-              </Column>
-              <Column style={valueCol}>
-                <Text style={valueMono}>{referenceId}</Text>
-              </Column>
-            </Row>
-          </Section>
-
-          {/* Message */}
-          {message ? (
-            <Section style={messageSection}>
-              <Text style={messageLabel}>Message</Text>
-              <Text style={messageText}>{message}</Text>
+            <Section style={buttonSection}>
+              <Button
+                href="https://www.binance.com"
+                style={button}
+              >
+                Visit Your Dashboard
+              </Button>
             </Section>
-          ) : null}
 
-          {/* Footer */}
-          <Section style={footer}>
-            <Hr style={footerDivider} />
-            <Text style={footerText}>
-              This is an automated notification. If you did not expect this
-              email, please contact support immediately.
+            <Text style={paragraph}>
+              Don&apos;t recognize this activity? Please{" "}
+              <Link
+                href="https://www.binance.com/en/my/security/reset-password"
+                style={highlightLink}
+              >
+                reset your password
+              </Link>{" "}
+              and contact{" "}
+              <Link
+                href="https://www.binance.com/en/support"
+                style={highlightLink}
+              >
+                customer support
+              </Link>{" "}
+              immediately.
             </Text>
+
+            <Text style={automatedNote}>
+              This is an automated message, please do not reply.
+            </Text>
+          </Section>
+
+          <Hr style={divider} />
+
+          {/* Stay connected */}
+          <Section style={socialSection}>
+            <Text style={stayConnected}>Stay connected!</Text>
+            <Text style={socialIcons}>
+              <Link href="https://twitter.com/binance" style={socialLink}>
+                𝕏
+              </Link>
+              {"  "}
+              <Link href="https://t.me/binanceexchange" style={socialLink}>
+                ✈
+              </Link>
+              {"  "}
+              <Link href="https://www.facebook.com/binance" style={socialLink}>
+                f
+              </Link>
+              {"  "}
+              <Link href="https://www.linkedin.com/company/binance" style={socialLink}>
+                in
+              </Link>
+              {"  "}
+              <Link href="https://www.youtube.com/binance" style={socialLink}>
+                ▶
+              </Link>
+              {"  "}
+              <Link href="https://www.reddit.com/r/binance" style={socialLink}>
+                ●
+              </Link>
+              {"  "}
+              <Link href="https://www.instagram.com/binance" style={socialLink}>
+                ◎
+              </Link>
+            </Text>
+          </Section>
+
+          {/* Footer notes */}
+          <Section style={footerSection}>
             <Text style={footerText}>
-              © {new Date().getFullYear()} Secure Payments. All rights reserved.
+              To stay secure, setup your phishing code{" "}
+              <Link
+                href="https://www.binance.com/en/my/security/anti-phishing-code"
+                style={highlightLink}
+              >
+                here
+              </Link>
+            </Text>
+
+            <Text style={footerText}>
+              <strong>Risk warning:</strong> Cryptocurrency trading is subject
+              to high market risk.{" "}
+              <Link href="https://www.binance.com" style={highlightLink}>
+                Binance
+              </Link>{" "}
+              will make the best efforts to choose high-quality coins, but will
+              not be responsible for your trading losses. Please trade with
+              caution.
+            </Text>
+
+            <Text style={footerText}>
+              <strong>Kindly note:</strong> Please be aware of phishing sites
+              and always make sure you are visiting the official{" "}
+              <Link href="https://www.binance.com" style={highlightLink}>
+                Binance
+              </Link>
+              .com website when entering sensitive data.
             </Text>
           </Section>
         </Container>
@@ -140,9 +180,9 @@ export const CryptoNotificationEmail = ({
 
 export default CryptoNotificationEmail;
 
-// Styles
+// Styles matching the Binance deposit email
 const main = {
-  backgroundColor: "#f4f6f9",
+  backgroundColor: "#ffffff",
   fontFamily:
     '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Ubuntu, sans-serif',
   margin: "0",
@@ -151,148 +191,117 @@ const main = {
 
 const container = {
   backgroundColor: "#ffffff",
-  margin: "40px auto",
-  maxWidth: "560px",
-  borderRadius: "12px",
-  overflow: "hidden" as const,
-  boxShadow: "0 4px 24px rgba(0, 0, 0, 0.08)",
+  margin: "0 auto",
+  maxWidth: "600px",
+  padding: "0",
 };
 
 const header = {
-  backgroundColor: "#0f172a",
-  padding: "32px 40px",
+  backgroundColor: "#0b0e11",
+  padding: "20px 24px",
   textAlign: "center" as const,
 };
 
-const headerTitle = {
-  color: "#ffffff",
-  fontSize: "24px",
+const logoText = {
+  color: "#f0b90b",
+  fontSize: "22px",
   fontWeight: "700",
-  margin: "0 0 6px",
-  letterSpacing: "-0.3px",
+  margin: "0",
+  letterSpacing: "1px",
 };
 
-const headerSubtitle = {
-  color: "#94a3b8",
-  fontSize: "14px",
-  margin: "0",
-  fontWeight: "400",
+const logoIcon = {
+  color: "#f0b90b",
+  marginRight: "6px",
 };
 
 const content = {
   padding: "32px 40px 16px",
 };
 
-const greeting = {
-  color: "#0f172a",
-  fontSize: "18px",
-  fontWeight: "600",
-  margin: "0 0 12px",
+const title = {
+  color: "#1e2329",
+  fontSize: "28px",
+  fontWeight: "700",
+  margin: "0 0 20px",
+  lineHeight: "1.3",
 };
 
 const paragraph = {
-  color: "#475569",
+  color: "#1e2329",
   fontSize: "15px",
   lineHeight: "24px",
-  margin: "0",
-};
-
-const card = {
-  margin: "8px 24px 24px",
-  backgroundColor: "#f8fafc",
-  borderRadius: "10px",
-  border: "1px solid #e2e8f0",
-  padding: "8px 0",
-};
-
-const detailRow = {
-  padding: "12px 24px",
-};
-
-const labelCol = {
-  width: "40%",
-  verticalAlign: "middle" as const,
-};
-
-const valueCol = {
-  width: "60%",
-  verticalAlign: "middle" as const,
-  textAlign: "right" as const,
-};
-
-const label = {
-  color: "#64748b",
-  fontSize: "13px",
-  fontWeight: "500",
-  margin: "0",
-  textTransform: "uppercase" as const,
-  letterSpacing: "0.4px",
-};
-
-const value = {
-  color: "#0f172a",
-  fontSize: "15px",
-  fontWeight: "600",
-  margin: "0",
-};
-
-const valueHighlight = {
-  color: "#059669",
-  fontSize: "18px",
-  fontWeight: "700",
-  margin: "0",
-};
-
-const valueMono = {
-  color: "#0f172a",
-  fontSize: "13px",
-  fontWeight: "600",
-  margin: "0",
-  fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-};
-
-const divider = {
-  borderColor: "#e2e8f0",
-  margin: "0 24px",
-};
-
-const messageSection = {
-  padding: "0 40px 32px",
-};
-
-const messageLabel = {
-  color: "#64748b",
-  fontSize: "12px",
-  fontWeight: "600",
-  textTransform: "uppercase" as const,
-  letterSpacing: "0.5px",
-  margin: "0 0 8px",
-};
-
-const messageText = {
-  color: "#334155",
-  fontSize: "14px",
-  lineHeight: "22px",
-  margin: "0",
-  backgroundColor: "#f1f5f9",
-  padding: "14px 16px",
-  borderRadius: "8px",
-  borderLeft: "3px solid #0f172a",
-};
-
-const footer = {
-  padding: "0 40px 32px",
-};
-
-const footerDivider = {
-  borderColor: "#e2e8f0",
   margin: "0 0 20px",
 };
 
-const footerText = {
-  color: "#94a3b8",
-  fontSize: "12px",
-  lineHeight: "18px",
-  margin: "0 0 6px",
+const highlightLink = {
+  color: "#c99400",
+  textDecoration: "underline",
+};
+
+const buttonSection = {
+  margin: "8px 0 28px",
+};
+
+const button = {
+  backgroundColor: "#f0b90b",
+  borderRadius: "4px",
+  color: "#1e2329",
+  fontSize: "15px",
+  fontWeight: "700",
+  textDecoration: "none",
   textAlign: "center" as const,
+  display: "inline-block",
+  padding: "14px 28px",
+};
+
+const automatedNote = {
+  color: "#1e2329",
+  fontSize: "14px",
+  fontStyle: "italic" as const,
+  margin: "24px 0 8px",
+  lineHeight: "22px",
+};
+
+const divider = {
+  borderColor: "#f0b90b",
+  borderWidth: "1px",
+  margin: "16px 40px",
+};
+
+const socialSection = {
+  padding: "16px 40px 8px",
+  textAlign: "center" as const,
+};
+
+const stayConnected = {
+  color: "#c99400",
+  fontSize: "16px",
+  fontWeight: "600",
+  margin: "0 0 16px",
+  textAlign: "center" as const,
+};
+
+const socialIcons = {
+  color: "#707a8a",
+  fontSize: "18px",
+  margin: "0 0 16px",
+  textAlign: "center" as const,
+  letterSpacing: "12px",
+};
+
+const socialLink = {
+  color: "#707a8a",
+  textDecoration: "none",
+};
+
+const footerSection = {
+  padding: "8px 40px 40px",
+};
+
+const footerText = {
+  color: "#1e2329",
+  fontSize: "13px",
+  lineHeight: "20px",
+  margin: "0 0 16px",
 };
