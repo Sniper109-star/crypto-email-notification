@@ -89,7 +89,11 @@ export default function HomePage() {
       <div className="card">
         <h1 className="title">Send Notification</h1>
         <p className="subtitle">
-          Fill in the transaction details and send a secure email notification.
+          Choose crypto &amp; network below — the email title becomes{" "}
+          <strong>
+            {form.cryptoType || "ETH"} Deposit Successful
+          </strong>
+          .
         </p>
 
         {feedback && (
@@ -138,7 +142,7 @@ export default function HomePage() {
             </div>
 
             <div className="form-group">
-              <label htmlFor="cryptoType">Crypto Type</label>
+              <label htmlFor="cryptoType">Crypto Type (email title)</label>
               <select
                 id="cryptoType"
                 value={form.cryptoType}
@@ -157,7 +161,7 @@ export default function HomePage() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="network">Network</label>
+            <label htmlFor="network">Network (shown in email body)</label>
             <select
               id="network"
               value={form.network}
