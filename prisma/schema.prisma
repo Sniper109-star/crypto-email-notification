@@ -1,0 +1,90 @@
+// Prisma schema for persistent email templates
+// Run: npx prisma migrate dev
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  image         String?
+  googleId      String?   @unique
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  templates     Template[]
+  accounts      Account[]
+  sessions      Session[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Template {
+  id          String   @id @default(cuid())
+  name        String
+  description String?  @db.Text
+  subject     String
+  // Source of truth for the visual editor (JSON blocks)
+  editorJson  Json
+  // Cached email-safe HTML rendered from editorJson
+  html        String   @db.Text
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime  @updatedAt
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([isDefault])
+  @@index([userId])
+}
+
+model SendLog {
+  id          String   @id @default(cuid())
+  templateId  String?
+  toEmail     String
+  subject     String
+  messageId   String?
+  success     Boolean
+  error       String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+}
