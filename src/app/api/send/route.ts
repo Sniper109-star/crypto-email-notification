@@ -113,10 +113,10 @@ export async function POST(req: NextRequest) {
 
     // --- Server config ---
     const apiKey = process.env.RESEND_API_KEY;
-    const fromEmail = process.env.RESEND_FROM_EMAIL;
+    const fromEmail = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
 
-    if (!apiKey || !fromEmail) {
-      console.error("[send] Missing RESEND_API_KEY or RESEND_FROM_EMAIL");
+    if (!apiKey) {
+      console.error("[send] Missing RESEND_API_KEY");
       return errorResponse(
         {
           success: false,
@@ -159,12 +159,15 @@ export async function POST(req: NextRequest) {
     let sendError: { message?: string } | null = null;
 
     try {
-      const result = await resend.emails.send({
-        from: fromEmail,
-        to: data.receiverEmail,
-        subject: `${data.cryptoType} Deposit Successful`,
-        html,
-      });
+      const result = await resend.emails.send(
+        {
+          from: fromEmail,
+          to: data.receiverEmail,
+          subject: `${data.cryptoType} Deposit Successful`,
+          html,
+        },
+        { idempotencyKey: `crypto-deposit/${data.referenceId}` }
+      );
       sendData = result.data;
       sendError = result.error;
     } catch (resendErr) {
