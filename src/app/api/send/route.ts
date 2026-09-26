@@ -113,14 +113,17 @@ export async function POST(req: NextRequest) {
 
     // --- Server config ---
     const apiKey = process.env.RESEND_API_KEY;
-    const fromEmail = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
+    const fromEmail = process.env.RESEND_FROM_EMAIL;
 
-    if (!apiKey) {
-      console.error("[send] Missing RESEND_API_KEY");
+    if (!apiKey || !fromEmail) {
+      console.error("[send] Missing Resend configuration", {
+        hasApiKey: Boolean(apiKey),
+        hasFromEmail: Boolean(fromEmail),
+      });
       return errorResponse(
         {
           success: false,
-          error: "Server configuration error. Please contact support.",
+          error: "Email service is not configured. Set RESEND_API_KEY and RESEND_FROM_EMAIL.",
           code: "CONFIG_ERROR",
         },
         500
