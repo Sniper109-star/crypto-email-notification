@@ -144,8 +144,8 @@ export default function HomePage() {
   const subject = `${form.cryptoType} Deposit Successful`;
 
   return (
-    <div className="page">
-      <div className="card">
+    <main className="page">
+      <div className="card" aria-live="polite">
         <h1 className="title">
           {step === "form" ? "Send Crypto Notification" : "Review Email"}
         </h1>
@@ -329,6 +329,6 @@ export default function HomePage() {
           </div>
         )}
       </div>
-    </div>
+    </main>
   );
 }

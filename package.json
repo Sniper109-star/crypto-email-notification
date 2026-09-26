@@ -14,8 +14,9 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
+    "@prisma/client": "^6.7.0",
     "@react-email/components": "^0.0.41",
-    "next": "^15.3.3",
+    "next": "^16.3.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "resend": "^4.5.1",
@@ -25,7 +26,9 @@
     "@types/node": "^22.13.10",
     "@types/react": "^19.0.12",
     "@types/react-dom": "^19.0.4",
+    "prisma": "6.7.0",
     "react-email": "^4.0.7",
+    "ts-node": "^10.9.2",
     "typescript": "^5.8.2"
   },
   "prisma": {
