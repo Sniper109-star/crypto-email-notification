@@ -4,6 +4,7 @@ import { render } from "@react-email/components";
 import { CryptoNotificationEmail } from "@/emails/crypto-notification";
 import { sendEmailSchema } from "@/lib/validation";
 import { rateLimit } from "@/lib/rate-limit";
+import { mapResendError, type ApiErrorBody } from "@/lib/errors";
 
 export const runtime = "nodejs";
 
@@ -17,84 +18,128 @@ function getClientIp(req: NextRequest): string {
   return "unknown";
 }
 
+function errorResponse(
+  body: ApiErrorBody,
+  status: number,
+  headers?: Record<string, string>
+) {
+  return NextResponse.json(body, { status, headers });
+}
+
+export async function GET() {
+  return errorResponse(
+    {
+      success: false,
+      error: "Method not allowed. Use POST.",
+      code: "METHOD_NOT_ALLOWED",
+    },
+    405,
+    { Allow: "POST" }
+  );
+}
+
 export async function POST(req: NextRequest) {
   try {
-    // Rate limiting
+    // --- Rate limiting ---
     const ip = getClientIp(req);
     const limit = rateLimit(ip);
     if (!limit.success) {
-      return NextResponse.json(
+      return errorResponse(
         {
           success: false,
-          error: `Rate limit exceeded. Try again in ${limit.resetInSeconds} seconds.`,
+          error: `Too many requests. Please try again in ${limit.resetInSeconds} seconds.`,
+          code: "RATE_LIMITED",
+          retryAfter: limit.resetInSeconds,
         },
+        429,
         {
-          status: 429,
-          headers: {
-            "Retry-After": String(limit.resetInSeconds),
-            "X-RateLimit-Remaining": "0",
-          },
+          "Retry-After": String(limit.resetInSeconds),
+          "X-RateLimit-Remaining": "0",
         }
       );
     }
 
-    // Parse & validate body
+    // --- Parse JSON ---
     let body: unknown;
     try {
       body = await req.json();
     } catch {
-      return NextResponse.json(
-        { success: false, error: "Invalid JSON body" },
-        { status: 400 }
+      return errorResponse(
+        {
+          success: false,
+          error: "Invalid JSON body.",
+          code: "INVALID_JSON",
+        },
+        400
       );
     }
 
+    // --- Validate ---
     const parsed = sendEmailSchema.safeParse(body);
     if (!parsed.success) {
-      const errors = parsed.error.flatten().fieldErrors;
-      return NextResponse.json(
+      const fieldErrors = parsed.error.flatten().fieldErrors;
+      const firstMessage =
+        Object.values(fieldErrors)
+          .flat()
+          .find((m) => typeof m === "string") || "Validation failed";
+
+      return errorResponse(
         {
           success: false,
-          error: "Validation failed",
-          details: errors,
+          error: firstMessage,
+          code: "VALIDATION_ERROR",
+          details: fieldErrors,
         },
-        { status: 400 }
+        400
       );
     }
 
     const data = parsed.data;
 
-    // Server-only secrets
+    // --- Server config ---
     const apiKey = process.env.RESEND_API_KEY;
     const fromEmail = process.env.RESEND_FROM_EMAIL;
 
     if (!apiKey || !fromEmail) {
-      console.error("Missing RESEND_API_KEY or RESEND_FROM_EMAIL");
-      return NextResponse.json(
+      console.error("[send] Missing RESEND_API_KEY or RESEND_FROM_EMAIL");
+      return errorResponse(
         {
           success: false,
           error: "Server configuration error. Please contact support.",
+          code: "CONFIG_ERROR",
         },
-        { status: 500 }
+        500
       );
     }
 
+    // --- Render email ---
+    let html: string;
+    try {
+      html = await render(
+        CryptoNotificationEmail({
+          name: data.name,
+          amount: data.amount,
+          cryptoType: data.cryptoType,
+          network: data.network,
+          receiverEmail: data.receiverEmail,
+          referenceId: data.referenceId,
+          message: data.message || "",
+        })
+      );
+    } catch (renderErr) {
+      console.error("[send] Template render failed:", renderErr);
+      return errorResponse(
+        {
+          success: false,
+          error: "Failed to render email template. Please try again.",
+          code: "RENDER_ERROR",
+        },
+        500
+      );
+    }
+
+    // --- Send via Resend ---
     const resend = new Resend(apiKey);
-
-    // Render the React Email template to HTML
-    const html = await render(
-      CryptoNotificationEmail({
-        name: data.name,
-        amount: data.amount,
-        cryptoType: data.cryptoType,
-        network: data.network,
-        receiverEmail: data.receiverEmail,
-        referenceId: data.referenceId,
-        message: data.message || "",
-      })
-    );
-
-    // Send via Resend
     const { data: sendData, error: sendError } = await resend.emails.send({
       from: fromEmail,
       to: data.receiverEmail,
@@ -103,13 +148,27 @@ export async function POST(req: NextRequest) {
     });
 
     if (sendError) {
-      console.error("Resend error:", sendError);
-      return NextResponse.json(
+      console.error("[send] Resend error:", sendError);
+      const mapped = mapResendError(sendError.message);
+      return errorResponse(
         {
           success: false,
-          error: sendError.message || "Failed to send email",
+          error: mapped.error,
+          code: mapped.code,
         },
-        { status: 502 }
+        mapped.status
+      );
+    }
+
+    if (!sendData?.id) {
+      console.error("[send] Resend returned no message id");
+      return errorResponse(
+        {
+          success: false,
+          error: "Email service did not confirm delivery. Please try again.",
+          code: "RESEND_ERROR",
+        },
+        502
       );
     }
 
@@ -117,7 +176,7 @@ export async function POST(req: NextRequest) {
       {
         success: true,
         message: "Email sent successfully",
-        id: sendData?.id,
+        id: sendData.id,
       },
       {
         status: 200,
@@ -127,13 +186,15 @@ export async function POST(req: NextRequest) {
       }
     );
   } catch (err) {
-    console.error("Unexpected error in /api/send:", err);
-    return NextResponse.json(
+    // Never leak stack traces or internal details
+    console.error("[send] Unexpected error:", err);
+    return errorResponse(
       {
         success: false,
         error: "An unexpected error occurred. Please try again later.",
+        code: "UNEXPECTED",
       },
-      { status: 500 }
+      500
     );
   }
 }
