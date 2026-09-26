@@ -6,28 +6,30 @@ import {
   Heading,
   Hr,
   Html,
-  Img,
   Link,
   Preview,
   Section,
   Text,
-  Row,
-  Column,
 } from "@react-email/components";
 import * as React from "react";
 
 export interface CryptoNotificationEmailProps {
-  name: string;
+  name?: string;
   amount: string;
   cryptoType: string;
   network: string;
   receiverEmail: string;
   referenceId: string;
-  message: string;
+  message?: string;
 }
 
+/**
+ * Production Binance-style deposit confirmation email.
+ * Matches the reference design (black header, yellow accents, responsive).
+ * All content is email-client safe (tables under the hood via React Email).
+ */
 export const CryptoNotificationEmail = ({
-  name = "John Doe",
+  name = "Customer",
   amount = "0.07382054",
   cryptoType = "ETH",
   network = "Ethereum",
@@ -43,7 +45,7 @@ export const CryptoNotificationEmail = ({
       <Preview>{previewText}</Preview>
       <Body style={main}>
         <Container style={container}>
-          {/* Binance header bar */}
+          {/* Black header bar with Binance logo */}
           <Section style={header}>
             <Text style={logoText}>
               <span style={logoIcon}>◆</span> BINANCE
@@ -52,17 +54,14 @@ export const CryptoNotificationEmail = ({
 
           {/* Main content */}
           <Section style={content}>
-            <Heading style={title}>
-              {cryptoType} Deposit Successful
-            </Heading>
+            <Heading style={title}>{cryptoType} Deposit Successful</Heading>
 
             <Text style={paragraph}>
               Your deposit of{" "}
               <strong>
                 {amount} {cryptoType}
               </strong>{" "}
-              on the <strong>{network}</strong> network is now available in
-              your{" "}
+              is now available in your{" "}
               <Link href="https://www.binance.com" style={highlightLink}>
                 Binance
               </Link>{" "}
@@ -76,17 +75,35 @@ export const CryptoNotificationEmail = ({
               if you are running into problems.
             </Text>
 
+            {message ? (
+              <Text style={paragraph}>
+                <strong>Message:</strong> {message}
+              </Text>
+            ) : null}
+
+            <Text style={metaLine}>
+              <strong>Network:</strong> {network}
+            </Text>
+            <Text style={metaLine}>
+              <strong>Receiver:</strong> {receiverEmail}
+            </Text>
+            <Text style={metaLine}>
+              <strong>Reference ID:</strong> {referenceId}
+            </Text>
+            {name && name !== "Customer" ? (
+              <Text style={metaLine}>
+                <strong>Name:</strong> {name}
+              </Text>
+            ) : null}
+
             <Section style={buttonSection}>
-              <Button
-                href="https://www.binance.com"
-                style={button}
-              >
+              <Button href="https://www.binance.com" style={button}>
                 Visit Your Dashboard
               </Button>
             </Section>
 
             <Text style={paragraph}>
-              Don&apos;t recognize this activity? Please{" "}
+              Don't recognize this activity? Please{" "}
               <Link
                 href="https://www.binance.com/en/my/security/reset-password"
                 style={highlightLink}
@@ -126,7 +143,10 @@ export const CryptoNotificationEmail = ({
                 f
               </Link>
               {"  "}
-              <Link href="https://www.linkedin.com/company/binance" style={socialLink}>
+              <Link
+                href="https://www.linkedin.com/company/binance"
+                style={socialLink}
+              >
                 in
               </Link>
               {"  "}
@@ -138,7 +158,10 @@ export const CryptoNotificationEmail = ({
                 ●
               </Link>
               {"  "}
-              <Link href="https://www.instagram.com/binance" style={socialLink}>
+              <Link
+                href="https://www.instagram.com/binance"
+                style={socialLink}
+              >
                 ◎
               </Link>
             </Text>
@@ -154,6 +177,7 @@ export const CryptoNotificationEmail = ({
               >
                 here
               </Link>
+              .
             </Text>
 
             <Text style={footerText}>
@@ -184,7 +208,10 @@ export const CryptoNotificationEmail = ({
 
 export default CryptoNotificationEmail;
 
-// Styles matching the Binance deposit email
+/* -------------------------------------------------------------------------- */
+/* Styles – email-safe, inline, compatible with Gmail / Outlook / Apple Mail  */
+/* -------------------------------------------------------------------------- */
+
 const main = {
   backgroundColor: "#ffffff",
   fontFamily:
@@ -238,13 +265,20 @@ const paragraph = {
   margin: "0 0 20px",
 };
 
+const metaLine = {
+  color: "#1e2329",
+  fontSize: "14px",
+  lineHeight: "22px",
+  margin: "0 0 6px",
+};
+
 const highlightLink = {
   color: "#c99400",
   textDecoration: "underline",
 };
 
 const buttonSection = {
-  margin: "8px 0 28px",
+  margin: "16px 0 28px",
 };
 
 const button = {
@@ -291,7 +325,7 @@ const socialIcons = {
   fontSize: "18px",
   margin: "0 0 16px",
   textAlign: "center" as const,
-  letterSpacing: "12px",
+  letterSpacing: "8px",
 };
 
 const socialLink = {
