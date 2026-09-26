@@ -259,34 +259,12 @@ export default function HomePage() {
                 {form.cryptoType} Deposit Successful
               </h2>
               <p>
-                Your deposit of{" "}
-                <strong>
-                  {form.amount} {form.cryptoType}
-                </strong>{" "}
-                is now available in your <span className="hl">Binance</span>{" "}
-                account. Log in to check your balance. Read our{" "}
+                Your deposit of {form.amount} {form.cryptoType} is now
+                available in your <span className="hl">Binance</span> account.
+                Log in to check your balance. Read our{" "}
                 <span className="hl">FAQs</span> if you are running into
                 problems.
               </p>
-              {form.message && (
-                <p>
-                  <strong>Message:</strong> {form.message}
-                </p>
-              )}
-              <p>
-                <strong>Network:</strong> {form.network}
-              </p>
-              <p>
-                <strong>Receiver:</strong> {form.receiverEmail}
-              </p>
-              <p>
-                <strong>Reference ID:</strong> {form.referenceId}
-              </p>
-              {form.name && (
-                <p>
-                  <strong>Name:</strong> {form.name}
-                </p>
-              )}
               <div className="preview-btn">Visit Your Dashboard</div>
               <p className="preview-muted">
                 Don't recognize this activity? Please reset your password
