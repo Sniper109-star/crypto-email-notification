@@ -25,8 +25,8 @@ export interface CryptoNotificationEmailProps {
 
 /**
  * Production Binance-style deposit confirmation email.
- * Matches the reference design (black header, yellow accents, responsive).
- * All content is email-client safe (tables under the hood via React Email).
+ * Matches the reference design exactly (black header, yellow accents, layout).
+ * Email-client safe via React Email.
  */
 export const CryptoNotificationEmail = ({
   name = "Customer",
@@ -45,23 +45,19 @@ export const CryptoNotificationEmail = ({
       <Preview>{previewText}</Preview>
       <Body style={main}>
         <Container style={container}>
-          {/* Black header bar with Binance logo */}
+          {/* Black header bar – matches screenshot */}
           <Section style={header}>
             <Text style={logoText}>
               <span style={logoIcon}>◆</span> BINANCE
             </Text>
           </Section>
 
-          {/* Main content */}
+          {/* Main content – exact copy from reference image */}
           <Section style={content}>
             <Heading style={title}>{cryptoType} Deposit Successful</Heading>
 
             <Text style={paragraph}>
-              Your deposit of{" "}
-              <strong>
-                {amount} {cryptoType}
-              </strong>{" "}
-              is now available in your{" "}
+              Your deposit of {amount} {cryptoType} is now available in your{" "}
               <Link href="https://www.binance.com" style={highlightLink}>
                 Binance
               </Link>{" "}
@@ -75,27 +71,6 @@ export const CryptoNotificationEmail = ({
               if you are running into problems.
             </Text>
 
-            {message ? (
-              <Text style={paragraph}>
-                <strong>Message:</strong> {message}
-              </Text>
-            ) : null}
-
-            <Text style={metaLine}>
-              <strong>Network:</strong> {network}
-            </Text>
-            <Text style={metaLine}>
-              <strong>Receiver:</strong> {receiverEmail}
-            </Text>
-            <Text style={metaLine}>
-              <strong>Reference ID:</strong> {referenceId}
-            </Text>
-            {name && name !== "Customer" ? (
-              <Text style={metaLine}>
-                <strong>Name:</strong> {name}
-              </Text>
-            ) : null}
-
             <Section style={buttonSection}>
               <Button href="https://www.binance.com" style={button}>
                 Visit Your Dashboard
@@ -103,7 +78,7 @@ export const CryptoNotificationEmail = ({
             </Section>
 
             <Text style={paragraph}>
-              Don't recognize this activity? Please{" "}
+              Don&apos;t recognize this activity? Please{" "}
               <Link
                 href="https://www.binance.com/en/my/security/reset-password"
                 style={highlightLink}
@@ -167,7 +142,7 @@ export const CryptoNotificationEmail = ({
             </Text>
           </Section>
 
-          {/* Footer notes */}
+          {/* Footer – exact copy from reference image */}
           <Section style={footerSection}>
             <Text style={footerText}>
               To stay secure, setup your phishing code{" "}
@@ -209,7 +184,7 @@ export const CryptoNotificationEmail = ({
 export default CryptoNotificationEmail;
 
 /* -------------------------------------------------------------------------- */
-/* Styles – email-safe, inline, compatible with Gmail / Outlook / Apple Mail  */
+/* Styles – email-safe, inline, Gmail / Outlook / Apple Mail compatible      */
 /* -------------------------------------------------------------------------- */
 
 const main = {
@@ -265,20 +240,13 @@ const paragraph = {
   margin: "0 0 20px",
 };
 
-const metaLine = {
-  color: "#1e2329",
-  fontSize: "14px",
-  lineHeight: "22px",
-  margin: "0 0 6px",
-};
-
 const highlightLink = {
   color: "#c99400",
   textDecoration: "underline",
 };
 
 const buttonSection = {
-  margin: "16px 0 28px",
+  margin: "8px 0 28px",
 };
 
 const button = {
