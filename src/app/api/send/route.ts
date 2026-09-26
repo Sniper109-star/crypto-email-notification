@@ -5,6 +5,7 @@ import { CryptoNotificationEmail } from "@/emails/crypto-notification";
 import { sendEmailSchema } from "@/lib/validation";
 import { rateLimit } from "@/lib/rate-limit";
 import { mapResendError, type ApiErrorBody } from "@/lib/errors";
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -24,6 +25,20 @@ function errorResponse(
   headers?: Record<string, string>
 ) {
   return NextResponse.json(body, { status, headers });
+}
+
+async function persistSendLog(input: {
+  toEmail: string;
+  subject: string;
+  messageId?: string;
+  success: boolean;
+  error?: string;
+}) {
+  try {
+    await prisma.sendLog.create({ data: input });
+  } catch (error) {
+    console.error("[send] Failed to persist send log:", error);
+  }
 }
 
 export async function GET() {
@@ -154,6 +169,12 @@ export async function POST(req: NextRequest) {
       sendError = result.error;
     } catch (resendErr) {
       console.error("[send] Resend request failed:", resendErr);
+      await persistSendLog({
+        toEmail: data.receiverEmail,
+        subject: `${data.cryptoType} Deposit Successful`,
+        success: false,
+        error: "RESEND_REQUEST_FAILED",
+      });
       return errorResponse(
         {
           success: false,
@@ -166,6 +187,12 @@ export async function POST(req: NextRequest) {
 
     if (sendError) {
       console.error("[send] Resend error:", sendError);
+      await persistSendLog({
+        toEmail: data.receiverEmail,
+        subject: `${data.cryptoType} Deposit Successful`,
+        success: false,
+        error: sendError.message || "EMAIL_SERVICE_REJECTED",
+      });
       const mapped = mapResendError(sendError.message || "Email service rejected the request.");
       return errorResponse(
         {
@@ -188,6 +215,13 @@ export async function POST(req: NextRequest) {
         502
       );
     }
+
+    await persistSendLog({
+      toEmail: data.receiverEmail,
+      subject: `${data.cryptoType} Deposit Successful`,
+      messageId: sendData.id,
+      success: true,
+    });
 
     return NextResponse.json(
       {
