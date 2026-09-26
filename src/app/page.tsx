@@ -80,14 +80,46 @@ export default function HomePage() {
         body: JSON.stringify(form),
       });
 
-      const data = await res.json();
+      let data: {
+        success?: boolean;
+        error?: string;
+        code?: string;
+        details?: Record<string, string[]>;
+        message?: string;
+        id?: string;
+        retryAfter?: number;
+      };
+
+      try {
+        data = await res.json();
+      } catch {
+        setFeedback({
+          type: "error",
+          text: "Invalid response from server. Please try again.",
+        });
+        setStep("form");
+        return;
+      }
 
       if (!res.ok || !data.success) {
         if (data.details) setFieldErrors(data.details);
-        setFeedback({
-          type: "error",
-          text: data.error || "Failed to send email",
-        });
+
+        let message = data.error || "Failed to send email";
+
+        if (data.code === "RATE_LIMITED" && data.retryAfter) {
+          message = `Too many requests. Please try again in ${data.retryAfter} seconds.`;
+        } else if (data.code === "INVALID_RECIPIENT") {
+          message = "Invalid recipient email address.";
+        } else if (data.code === "CONFIG_ERROR") {
+          message = "Server is not configured to send email. Contact support.";
+        } else if (data.code === "VALIDATION_ERROR" && data.details) {
+          const first = Object.values(data.details)
+            .flat()
+            .find((m) => typeof m === "string");
+          if (first) message = first;
+        }
+
+        setFeedback({ type: "error", text: message });
         setStep("form");
         return;
       }
@@ -267,7 +299,7 @@ export default function HomePage() {
               </p>
               <div className="preview-btn">Visit Your Dashboard</div>
               <p className="preview-muted">
-                Don't recognize this activity? Please reset your password
+                Don&apos;t recognize this activity? Please reset your password
                 and contact customer support immediately.
               </p>
               <p className="preview-muted italic">
