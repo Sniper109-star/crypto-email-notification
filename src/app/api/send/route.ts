@@ -1,139 +1,94 @@
-import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
-import { render } from "@react-email/components";
-import { CryptoNotificationEmail } from "@/emails/crypto-notification";
-import { sendEmailSchema } from "@/lib/validation";
-import { rateLimit } from "@/lib/rate-limit";
+import { Resend } from 'resend';
+import { NextRequest, NextResponse } from 'next/server';
+import logger from '@/lib/logger';
+import { emailSchema } from '@/lib/validation';
+import { rateLimiter } from '@/lib/rate-limit';
+import { retryWithBackoff } from '@/lib/retry';
+import { insertEmailLog, updateEmailLog, getEmailLogByReferenceId } from '@/lib/database';
+import { render } from '@react-email/render';
+import CryptoNotificationEmail from '@/emails/crypto-notification';
 
-export const runtime = "nodejs";
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-function getClientIp(req: NextRequest): string {
-  const forwarded = req.headers.get("x-forwarded-for");
-  if (forwarded) {
-    return forwarded.split(",")[0].trim();
-  }
-  const realIp = req.headers.get("x-real-ip");
-  if (realIp) return realIp;
-  return "unknown";
-}
+export async function POST(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
 
-export async function POST(req: NextRequest) {
   try {
-    // Rate limiting
-    const ip = getClientIp(req);
-    const limit = rateLimit(ip);
-    if (!limit.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Rate limit exceeded. Try again in ${limit.resetInSeconds} seconds.`,
-        },
-        {
-          status: 429,
-          headers: {
-            "Retry-After": String(limit.resetInSeconds),
-            "X-RateLimit-Remaining": "0",
-          },
-        }
-      );
+    if (!rateLimiter(ip)) {
+      logger.warn('Rate limit exceeded', { ip });
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 });
     }
 
-    // Parse & validate body
-    let body: unknown;
-    try {
-      body = await req.json();
-    } catch {
-      return NextResponse.json(
-        { success: false, error: "Invalid JSON body" },
-        { status: 400 }
-      );
-    }
+    const body = await request.json();
+    const parsed = emailSchema.safeParse(body);
 
-    const parsed = sendEmailSchema.safeParse(body);
     if (!parsed.success) {
-      const errors = parsed.error.flatten().fieldErrors;
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Validation failed",
-          details: errors,
-        },
-        { status: 400 }
-      );
+      logger.warn('Validation failed', { errors: parsed.error.issues, ip });
+      return NextResponse.json({ success: false, error: 'Validation failed', details: parsed.error.issues }, { status: 400 });
     }
 
-    const data = parsed.data;
+    const emailData = parsed.data;
+    const existing = getEmailLogByReferenceId(emailData.referenceId);
 
-    // Server-only secrets
-    const apiKey = process.env.RESEND_API_KEY;
-    const fromEmail = process.env.RESEND_FROM_EMAIL;
-
-    if (!apiKey || !fromEmail) {
-      console.error("Missing RESEND_API_KEY or RESEND_FROM_EMAIL");
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Server configuration error. Please contact support.",
-        },
-        { status: 500 }
-      );
+    if (existing?.status === 'sent') {
+      return NextResponse.json({ success: true, message: 'Email already sent', id: existing.message_id }, { status: 200 });
     }
 
-    const resend = new Resend(apiKey);
-
-    // Render the React Email template to HTML
-    const html = await render(
-      CryptoNotificationEmail({
-        name: data.name,
-        amount: data.amount,
-        cryptoType: data.cryptoType,
-        network: data.network,
-        receiverEmail: data.receiverEmail,
-        referenceId: data.referenceId,
-        message: data.message || "",
-      })
-    );
-
-    // Send via Resend
-    const { data: sendData, error: sendError } = await resend.emails.send({
-      from: fromEmail,
-      to: data.receiverEmail,
-      subject: `${data.cryptoType} Deposit Successful`,
-      html,
+    const logId = existing?.id ?? insertEmailLog({
+      recipient: emailData.receiverEmail,
+      name: emailData.name,
+      amount: emailData.amount,
+      crypto_type: emailData.cryptoType,
+      network: emailData.network,
+      reference_id: emailData.referenceId,
+      status: 'pending',
+      attempt_count: 0,
+      max_attempts: Number(process.env.MAX_RETRIES || 3),
     });
 
-    if (sendError) {
-      console.error("Resend error:", sendError);
-      return NextResponse.json(
-        {
-          success: false,
-          error: sendError.message || "Failed to send email",
-        },
-        { status: 502 }
-      );
-    }
+    let result: any;
+    let attemptCount = 0;
 
-    return NextResponse.json(
-      {
-        success: true,
-        message: "Email sent successfully",
-        id: sendData?.id,
-      },
-      {
-        status: 200,
-        headers: {
-          "X-RateLimit-Remaining": String(limit.remaining),
+    try {
+      result = await retryWithBackoff(
+        async () => {
+          attemptCount += 1;
+          updateEmailLog(logId, { attempt_count: attemptCount, status: 'retrying' });
+
+          const emailHtml = await render(CryptoNotificationEmail({ ...emailData }));
+
+          return await resend.emails.send({
+            from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
+            to: emailData.receiverEmail,
+            subject: `Crypto Transaction Notification - ${emailData.cryptoType}`,
+            html: emailHtml,
+          });
         },
-      }
-    );
-  } catch (err) {
-    console.error("Unexpected error in /api/send:", err);
-    return NextResponse.json(
-      {
-        success: false,
-        error: "An unexpected error occurred. Please try again later.",
-      },
-      { status: 500 }
-    );
+        {
+          maxAttempts: Number(process.env.MAX_RETRIES || 3),
+          initialDelayMs: Number(process.env.RETRY_DELAY_MS || 1000),
+        },
+        `Send email for ${emailData.referenceId}`
+      );
+
+      updateEmailLog(logId, {
+        message_id: result.id,
+        status: 'sent',
+        sent_at: new Date().toISOString(),
+      });
+
+      logger.info('Email sent successfully', { referenceId: emailData.referenceId, messageId: result.id });
+
+      return NextResponse.json({ success: true, message: 'Email sent successfully', id: result.id }, { status: 200 });
+    } catch (sendError) {
+      const errorMessage = sendError instanceof Error ? sendError.message : String(sendError);
+      updateEmailLog(logId, { status: 'failed', error_message: errorMessage });
+      logger.error('Email send failed', { referenceId: emailData.referenceId, error: errorMessage, attemptCount });
+      return NextResponse.json({ success: false, error: 'Failed to send email', message: errorMessage }, { status: 500 });
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error('Unexpected error in send route', { error: message, ip });
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }

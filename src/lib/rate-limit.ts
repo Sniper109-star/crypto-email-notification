@@ -1,53 +1,22 @@
-/**
- * Simple in-memory rate limiter.
- * Suitable for single-instance deployments.
- * For multi-instance / serverless, replace with Redis / Upstash.
- */
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const MAX_REQUESTS_PER_WINDOW = 5;
 
-interface RateLimitEntry {
-  count: number;
-  resetAt: number;
-}
+const requestCounts = new Map<string, { count: number; resetAt: number }>();
 
-const store = new Map<string, RateLimitEntry>();
-
-const WINDOW_MS = 60 * 1000; // 1 minute
-const MAX_REQUESTS = 5; // 5 requests per minute per IP
-
-export function rateLimit(identifier: string): {
-  success: boolean;
-  remaining: number;
-  resetInSeconds: number;
-} {
+export function rateLimiter(ip: string): boolean {
   const now = Date.now();
-  const entry = store.get(identifier);
+  const entry = requestCounts.get(ip);
 
   if (!entry || now > entry.resetAt) {
-    store.set(identifier, { count: 1, resetAt: now + WINDOW_MS });
-    return { success: true, remaining: MAX_REQUESTS - 1, resetInSeconds: 60 };
+    requestCounts.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
   }
 
-  if (entry.count >= MAX_REQUESTS) {
-    const resetInSeconds = Math.ceil((entry.resetAt - now) / 1000);
-    return { success: false, remaining: 0, resetInSeconds };
+  if (entry.count >= MAX_REQUESTS_PER_WINDOW) {
+    return false;
   }
 
   entry.count += 1;
-  return {
-    success: true,
-    remaining: MAX_REQUESTS - entry.count,
-    resetInSeconds: Math.ceil((entry.resetAt - now) / 1000),
-  };
-}
-
-// Periodic cleanup to prevent memory leaks
-if (typeof setInterval !== "undefined") {
-  setInterval(() => {
-    const now = Date.now();
-    for (const [key, entry] of store.entries()) {
-      if (now > entry.resetAt) {
-        store.delete(key);
-      }
-    }
-  }, 5 * 60 * 1000);
+  requestCounts.set(ip, entry);
+  return true;
 }
