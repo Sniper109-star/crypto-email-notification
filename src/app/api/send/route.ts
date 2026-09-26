@@ -140,16 +140,33 @@ export async function POST(req: NextRequest) {
 
     // --- Send via Resend ---
     const resend = new Resend(apiKey);
-    const { data: sendData, error: sendError } = await resend.emails.send({
-      from: fromEmail,
-      to: data.receiverEmail,
-      subject: `${data.cryptoType} Deposit Successful`,
-      html,
-    });
+    let sendData: { id?: string } | null = null;
+    let sendError: { message?: string } | null = null;
+
+    try {
+      const result = await resend.emails.send({
+        from: fromEmail,
+        to: data.receiverEmail,
+        subject: `${data.cryptoType} Deposit Successful`,
+        html,
+      });
+      sendData = result.data;
+      sendError = result.error;
+    } catch (resendErr) {
+      console.error("[send] Resend request failed:", resendErr);
+      return errorResponse(
+        {
+          success: false,
+          error: "Email service is temporarily unavailable. Please try again.",
+          code: "RESEND_ERROR",
+        },
+        502
+      );
+    }
 
     if (sendError) {
       console.error("[send] Resend error:", sendError);
-      const mapped = mapResendError(sendError.message);
+      const mapped = mapResendError(sendError.message || "Email service rejected the request.");
       return errorResponse(
         {
           success: false,
