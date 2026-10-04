@@ -1,9 +1,8 @@
-import { Client } from "@upstash/qstash";
 import { NextRequest, NextResponse } from "next/server";
 import { sendEmailSchema } from "@/lib/validation";
 import { rateLimit } from "@/lib/rate-limit";
-import { type ApiErrorBody } from "@/lib/errors";
-import { getPublicUrl } from "@/lib/resend-delivery";
+import { mapResendError, type ApiErrorBody } from "@/lib/errors";
+import { deliverCryptoEmail, persistFailedDelivery } from "@/lib/resend-delivery";
 
 export const runtime = "nodejs";
 
@@ -43,9 +42,7 @@ export async function POST(req: NextRequest) {
     return errorResponse({ success: false, error: firstMessage, code: "VALIDATION_ERROR", details: fieldErrors }, 400);
   }
 
-  const token = process.env.QSTASH_TOKEN;
-  const publicUrl = getPublicUrl(req);
-  if (!token || !process.env.QSTASH_URL || !publicUrl.startsWith("http")) {
+  if (!process.env.RESEND_API) {
     return errorResponse(
       { success: false, error: "Email delivery is not configured correctly.", code: "CONFIG_ERROR" },
       500
@@ -53,28 +50,21 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const client = new Client({ token, baseUrl: process.env.QSTASH_URL });
-    const result = await client.publishJSON({
-      url: `${publicUrl}/api/workflows/send-email`,
-      body: parsed.data,
-      retries: 3,
-      headers: { "Content-Type": "application/json" },
-    });
+    const result = await deliverCryptoEmail(parsed.data);
 
     return NextResponse.json(
       {
         success: true,
-        queued: true,
-        message: "Email queued for delivery through Resend.",
-        messageId: result.messageId,
+        message: "Email sent successfully.",
+        id: result.id,
       },
-      { status: 202, headers: { "X-RateLimit-Remaining": String(limit.remaining) } }
+      { status: 200, headers: { "X-RateLimit-Remaining": String(limit.remaining) } }
     );
   } catch (error) {
-    console.error("[send] Failed to queue email:", error);
-    return errorResponse(
-      { success: false, error: "Unable to queue email. Please try again.", code: "QUEUE_ERROR" },
-      502
-    );
+    await persistFailedDelivery(parsed.data, error);
+    const message = error instanceof Error ? error.message : undefined;
+    const mapped = mapResendError(message);
+    console.error("[send] Resend delivery failed:", error);
+    return errorResponse({ success: false, error: mapped.error, code: mapped.code }, mapped.status);
   }
 }

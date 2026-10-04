@@ -8,9 +8,8 @@ export async function deliverCryptoEmail(data: SendEmailInput) {
   const apiKey = process.env.RESEND_API;
   if (!apiKey) throw new Error("RESEND_API is not configured");
 
-  // Resend's sandbox sender is valid without a verified domain, but it can
-  // only deliver to the account email associated with the Resend project.
-  const from = "Crypto Notifications <onboarding@resend.dev>";
+  const from = process.env.RESEND_FROM_EMAIL_2?.trim();
+  if (!from) throw new Error("RESEND_FROM_EMAIL_2 is not configured");
   const to = [data.receiverEmail];
   const subject = `${data.cryptoType} Deposit Successful`;
   const html = await render(
@@ -32,18 +31,22 @@ export async function deliverCryptoEmail(data: SendEmailInput) {
 
   if (error) throw new Error(error.message || "Resend rejected the request");
 
-  try {
-    await prisma.sendLog.create({
-      data: { toEmail: data.receiverEmail, subject, messageId: result?.id, success: true },
-    });
-  } catch (logError) {
-    console.error("[qstash] Failed to persist send log:", logError);
+  if (process.env.DATABASE_URL) {
+    try {
+      await prisma.sendLog.create({
+        data: { toEmail: data.receiverEmail, subject, messageId: result?.id, success: true },
+      });
+    } catch (logError) {
+      console.error("[email] Failed to persist send log:", logError);
+    }
   }
 
   return { id: result?.id, subject };
 }
 
 export async function persistFailedDelivery(data: SendEmailInput, error: unknown) {
+  if (!process.env.DATABASE_URL) return;
+
   try {
     await prisma.sendLog.create({
       data: {
@@ -54,7 +57,7 @@ export async function persistFailedDelivery(data: SendEmailInput, error: unknown
       },
     });
   } catch (logError) {
-    console.error("[qstash] Failed to persist failure log:", logError);
+    console.error("[email] Failed to persist failure log:", logError);
   }
 }
 
