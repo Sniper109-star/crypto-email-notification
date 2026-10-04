@@ -8,21 +8,25 @@ export async function deliverCryptoEmail(data: SendEmailInput) {
   const apiKey = process.env.RESEND_API;
   if (!apiKey) throw new Error("RESEND_API is not configured");
 
+  const recipient = data.receiverEmail.trim().toLowerCase();
+  const sandboxRecipient = (process.env.RESEND_SANDBOX_RECIPIENT_EMAIL || "dealchange90@gmail.com").trim().toLowerCase();
   const configuredFrom = process.env.RESEND_FROM_EMAIL || process.env.RESEND_FROM_EMAIL_2;
-  const from = configuredFrom?.trim().replace(/^['"]|['"]$/g, "");
+  const configuredSender = configuredFrom?.trim().replace(/^['"]|['"]$/g, "");
+  const from = recipient === sandboxRecipient ? "onboarding@resend.dev" : configuredSender;
+
   if (!from || from.startsWith("process.env.")) {
-    throw new Error("RESEND_FROM_EMAIL must contain a real sender address, not an environment expression");
+    throw new Error("RESEND_FROM_EMAIL must contain a real verified sender address, not an environment expression");
   }
-  if (!/^[^<>@\s]+(?:\s*<[^<>@\s]+@[^<>@\s]+>|@[^<>@\s]+)$/.test(from)) {
+  if (!/^[^<>@\s]+(?:\s*<[^<>@\s]+@[^<>\s]+>|@[^<>\s]+)$/.test(from)) {
     throw new Error("RESEND_FROM_EMAIL must be a valid email address or `Name <email>` sender");
   }
 
-  // Resend's sandbox sender can only deliver to the account owner's email.
-  // Any other recipient requires a verified sender domain in Resend.
-  if (from.toLowerCase().includes("@resend.dev") && !data.receiverEmail.toLowerCase().endsWith("@resend.dev")) {
-    throw new Error("Resend sandbox senders can only deliver to the account owner's email; verify a sending domain for arbitrary recipients");
+  // Resend's sandbox sender only delivers to the account owner's email.
+  // Use it for the configured account email; all other recipients need a verified domain sender.
+  if (from.toLowerCase().includes("@resend.dev") && recipient !== sandboxRecipient) {
+    throw new Error("Resend sandbox delivery is limited to the configured Resend account email; verify a sending domain for other recipients");
   }
-  const to = [data.receiverEmail];
+  const to = [recipient];
   const subject = `${data.cryptoType} Deposit Successful`;
   const html = await render(
     CryptoNotificationEmail({
