@@ -114,7 +114,8 @@ Edit `.env.local`:
 
 ```env
 RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-RESEND_FROM_EMAIL=onboarding@resend.dev
+  # The send route uses Resend's sandbox sender.
+  RESEND_FROM_EMAIL=onboarding@resend.dev
 ```
 
 ```bash
@@ -135,7 +136,7 @@ Open http://localhost:3000
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `RESEND_API_KEY` | Yes | From https://resend.com/api-keys |
-| `RESEND_FROM_EMAIL` | Yes | Verified sender (or `onboarding@resend.dev` for testing) |
+  | `RESEND_FROM_EMAIL` | No | Kept as `onboarding@resend.dev`; sandbox delivery is limited to the Resend account email. Verify a custom domain for arbitrary recipients. |
 | `DATABASE_URL` | Phase 2 | e.g. `postgresql://postgres:postgres@localhost:5432/email_templates?schema=public` |
 | `AUTH_SECRET` | Phase 2 | Generate with `openssl rand -base64 32` |
 | `GOOGLE_CLIENT_ID` | Phase 2 | Google Cloud Console → APIs & Services → Credentials |
