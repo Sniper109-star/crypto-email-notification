@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "email:dev": "email dev --dir src/emails",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
