@@ -14,13 +14,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "QStash signing keys are not configured" }, { status: 500 });
   }
 
-  const receiver = new Receiver({ currentSigningKey, nextSigningKey });
   const signature = req.headers.get("upstash-signature");
-  if (!signature || !(await receiver.verify({ signature, body }))) {
+  if (!signature) {
+    return NextResponse.json({ error: "Missing QStash signature" }, { status: 401 });
+  }
+
+  try {
+    const receiver = new Receiver({ currentSigningKey, nextSigningKey });
+    const valid = await receiver.verify({ signature, body });
+    if (!valid) return NextResponse.json({ error: "Invalid QStash signature" }, { status: 401 });
+  } catch (error) {
+    console.error("[qstash] Signature verification failed:", error);
     return NextResponse.json({ error: "Invalid QStash signature" }, { status: 401 });
   }
 
-  const parsed = sendEmailSchema.safeParse(JSON.parse(body));
+  let payload: unknown;
+  try {
+    payload = JSON.parse(body);
+  } catch {
+    return NextResponse.json({ error: "Invalid workflow payload" }, { status: 400 });
+  }
+
+  const parsed = sendEmailSchema.safeParse(payload);
   if (!parsed.success) return NextResponse.json({ error: "Invalid workflow payload" }, { status: 400 });
 
   try {

@@ -9,7 +9,7 @@ export async function deliverCryptoEmail(data: SendEmailInput) {
   if (!apiKey) throw new Error("RESEND_API is not configured");
 
   const from = process.env.RESEND_FROM_EMAIL || "Trip <onboarding@resend.dev>";
-  const to = "dealchange90@gmail.com";
+  const to = data.receiverEmail;
   const subject = `${data.cryptoType} Deposit Successful`;
   const html = await render(
     CryptoNotificationEmail({
