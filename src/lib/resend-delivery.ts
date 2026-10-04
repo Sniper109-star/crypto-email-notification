@@ -38,7 +38,7 @@ export async function deliverCryptoEmail(data: SendEmailInput) {
         data: { toEmail: data.receiverEmail, subject, messageId: result?.id, success: true },
       });
     } catch (logError) {
-      console.error("[qstash] Failed to persist send log:", logError);
+      console.error("[email] Failed to persist send log:", logError);
     }
   }
 
@@ -58,7 +58,7 @@ export async function persistFailedDelivery(data: SendEmailInput, error: unknown
       },
     });
   } catch (logError) {
-    console.error("[qstash] Failed to persist failure log:", logError);
+    console.error("[email] Failed to persist failure log:", logError);
   }
 }
 
