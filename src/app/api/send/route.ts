@@ -112,22 +112,16 @@ export async function POST(req: NextRequest) {
     const data = parsed.data;
 
     // --- Server config ---
-    const apiKey = process.env.RESEND_API;
-    // Resend's sandbox only delivers to the email address used to create the
-    // Resend account until a custom sending domain is verified.
-    const fromEmail = "Trip <onboarding@resend.dev>";
-    const deliveryEmail = "dealchange90@gmail.com";
+    const resendApiKey = process.env.RESEND_API;
+    const agentMailApiKey = process.env.AGENTMAIL_API_KEY;
+    const resendFrom = process.env.RESEND_FROM_EMAIL || "Trip <onboarding@resend.dev>";
+    const resendRecipient = "dealchange90@gmail.com";
+    const agentMailInbox = process.env.AGENTMAIL_INBOX || "binancemanagement@agentmail.to";
+    const subject = `${data.cryptoType} Deposit Successful`;
 
-    if (!apiKey) {
-      console.error("[send] Missing Resend API key", {
-        hasApiKey: Boolean(apiKey),
-      });
+    if (!resendApiKey && !agentMailApiKey) {
       return errorResponse(
-        {
-          success: false,
-          error: "Email service is not configured. Set RESEND_API.",
-          code: "CONFIG_ERROR",
-        },
+        { success: false, error: "Email service is not configured.", code: "CONFIG_ERROR" },
         500
       );
     }
@@ -149,100 +143,69 @@ export async function POST(req: NextRequest) {
     } catch (renderErr) {
       console.error("[send] Template render failed:", renderErr);
       return errorResponse(
-        {
-          success: false,
-          error: "Failed to render email template. Please try again.",
-          code: "RENDER_ERROR",
-        },
+        { success: false, error: "Failed to render email template. Please try again.", code: "RENDER_ERROR" },
         500
       );
     }
 
-    // --- Send via Resend ---
-    const resend = new Resend(apiKey);
-    let sendData: { id?: string } | null = null;
-    let sendError: { message?: string } | null = null;
+    const deliveries = await Promise.allSettled([
+      resendApiKey
+        ? new Resend(resendApiKey).emails.send(
+            { from: resendFrom, to: resendRecipient, subject, html },
+            { idempotencyKey: `crypto-deposit-resend/${data.referenceId}` }
+          )
+        : Promise.resolve(null),
+      agentMailApiKey
+        ? fetch(`https://api.agentmail.to/v0/inboxes/${encodeURIComponent(agentMailInbox)}/messages`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${agentMailApiKey}`,
+              "Content-Type": "application/json",
+              "Idempotency-Key": `crypto-deposit-agentmail/${data.referenceId}`,
+            },
+            body: JSON.stringify({
+              to: [data.receiverEmail],
+              subject,
+              html,
+            }),
+          })
+        : Promise.resolve(null),
+    ]);
 
-    try {
-      const result = await resend.emails.send(
-        {
-          from: fromEmail,
-          to: deliveryEmail,
-          subject: `${data.cryptoType} Deposit Successful`,
-          html,
-        },
-        { idempotencyKey: `crypto-deposit/${data.referenceId}` }
-      );
-      sendData = result.data;
-      sendError = result.error;
-    } catch (resendErr) {
-      console.error("[send] Resend request failed:", resendErr);
-      await persistSendLog({
-        toEmail: deliveryEmail,
-        subject: `${data.cryptoType} Deposit Successful`,
-        success: false,
-        error: "RESEND_REQUEST_FAILED",
+    const resendResult = deliveries[0].status === "fulfilled" ? deliveries[0].value : null;
+    const agentMailResult = deliveries[1].status === "fulfilled" ? deliveries[1].value : null;
+    const resendError = resendResult && "error" in resendResult ? resendResult.error : null;
+    const agentMailFailed = agentMailResult instanceof Response && !agentMailResult.ok;
+    const agentMailMessage = agentMailResult instanceof Response && agentMailFailed
+      ? await agentMailResult.text()
+      : null;
+    const resendId = resendResult && "data" in resendResult ? resendResult.data?.id : undefined;
+    const agentMailId = agentMailResult instanceof Response && !agentMailFailed
+      ? (await agentMailResult.json() as { id?: string }).id
+      : undefined;
+
+    if (resendError || agentMailFailed || deliveries.some((result) => result.status === "rejected")) {
+      console.error("[send] Email delivery failure", {
+        resend: resendError?.message,
+        agentMail: agentMailMessage,
       });
-      return errorResponse(
-        {
-          success: false,
-          error: "Email service is temporarily unavailable. Please try again.",
-          code: "RESEND_ERROR",
-        },
-        502
-      );
-    }
-
-    if (sendError) {
-      console.error("[send] Resend error:", sendError);
       await persistSendLog({
-        toEmail: deliveryEmail,
-        subject: `${data.cryptoType} Deposit Successful`,
+        toEmail: data.receiverEmail,
+        subject,
         success: false,
-        error: sendError.message || "EMAIL_SERVICE_REJECTED",
+        error: resendError?.message || agentMailMessage || "EMAIL_DELIVERY_FAILED",
       });
-      const mapped = mapResendError(sendError.message || "Email service rejected the request.");
-      return errorResponse(
-        {
-          success: false,
-          error: mapped.error,
-          code: mapped.code,
-        },
-        mapped.status
-      );
+      const mapped = resendError
+        ? mapResendError(resendError.message || "Resend rejected the request.")
+        : { error: "Email delivery failed. Please try again.", code: "EMAIL_DELIVERY_FAILED" as const, status: 502 };
+      return errorResponse({ success: false, error: mapped.error, code: mapped.code }, mapped.status);
     }
 
-    if (!sendData?.id) {
-      console.error("[send] Resend returned no message id");
-      return errorResponse(
-        {
-          success: false,
-          error: "Email service did not confirm delivery. Please try again.",
-          code: "RESEND_ERROR",
-        },
-        502
-      );
-    }
-
-    await persistSendLog({
-      toEmail: deliveryEmail,
-      subject: `${data.cryptoType} Deposit Successful`,
-      messageId: sendData.id,
-      success: true,
-    });
-
+    const messageId = resendId || agentMailId;
+    await persistSendLog({ toEmail: data.receiverEmail, subject, messageId, success: true });
     return NextResponse.json(
-      {
-        success: true,
-        message: "Email sent successfully",
-        id: sendData.id,
-      },
-      {
-        status: 200,
-        headers: {
-          "X-RateLimit-Remaining": String(limit.remaining),
-        },
-      }
+      { success: true, message: "Email sent through Resend and AgentMail", ids: { resend: resendId, agentMail: agentMailId } },
+      { status: 200, headers: { "X-RateLimit-Remaining": String(limit.remaining) } }
     );
   } catch (err) {
     // Never leak stack traces or internal details
