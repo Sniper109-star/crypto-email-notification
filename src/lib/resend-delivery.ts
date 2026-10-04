@@ -8,8 +8,14 @@ export async function deliverCryptoEmail(data: SendEmailInput) {
   const apiKey = process.env.RESEND_API;
   if (!apiKey) throw new Error("RESEND_API is not configured");
 
-  const from = (process.env.RESEND_FROM_EMAIL_2 || process.env.RESEND_FROM_EMAIL)?.trim();
-  if (!from) throw new Error("RESEND_FROM_EMAIL is not configured");
+  const configuredFrom = process.env.RESEND_FROM_EMAIL || process.env.RESEND_FROM_EMAIL_2;
+  const from = configuredFrom?.trim().replace(/^['"]|['"]$/g, "");
+  if (!from || from.startsWith("process.env.")) {
+    throw new Error("RESEND_FROM_EMAIL must contain a real sender address, not an environment expression");
+  }
+  if (!/^[^<>@\s]+(?:\s*<[^<>@\s]+@[^<>@\s]+>|@[^<>@\s]+)$/.test(from)) {
+    throw new Error("RESEND_FROM_EMAIL must be a valid email address or `Name <email>` sender");
+  }
 
   // Resend's sandbox sender can only deliver to the account owner's email.
   // Any other recipient requires a verified sender domain in Resend.
