@@ -44,23 +44,37 @@ export async function POST(req: NextRequest) {
   }
 
   const token = process.env.QSTASH_TOKEN;
-  if (!token) return errorResponse({ success: false, error: "QStash is not configured.", code: "CONFIG_ERROR" }, 500);
+  const publicUrl = getPublicUrl(req);
+  if (!token || !process.env.QSTASH_URL || !publicUrl.startsWith("http")) {
+    return errorResponse(
+      { success: false, error: "Email delivery is not configured correctly.", code: "CONFIG_ERROR" },
+      500
+    );
+  }
 
   try {
-    const client = new Client({ token, ...(process.env.QSTASH_URL ? { baseUrl: process.env.QSTASH_URL } : {}) });
+    const client = new Client({ token, baseUrl: process.env.QSTASH_URL });
     const result = await client.publishJSON({
-      url: `${getPublicUrl(req)}/api/workflows/send-email`,
+      url: `${publicUrl}/api/workflows/send-email`,
       body: parsed.data,
       retries: 3,
       headers: { "Content-Type": "application/json" },
     });
 
     return NextResponse.json(
-      { success: true, queued: true, message: "Email queued for delivery through Resend.", messageId: result.messageId },
+      {
+        success: true,
+        queued: true,
+        message: "Email queued for delivery through Resend.",
+        messageId: result.messageId,
+      },
       { status: 202, headers: { "X-RateLimit-Remaining": String(limit.remaining) } }
     );
   } catch (error) {
     console.error("[send] Failed to queue email:", error);
-    return errorResponse({ success: false, error: "Unable to queue email. Please try again.", code: "UNEXPECTED" }, 502);
+    return errorResponse(
+      { success: false, error: "Unable to queue email. Please try again.", code: "QUEUE_ERROR" },
+      502
+    );
   }
 }
