@@ -113,17 +113,18 @@ export async function POST(req: NextRequest) {
 
     // --- Server config ---
     const apiKey = process.env.RESEND_API_KEY;
-    const fromEmail = process.env.RESEND_FROM_EMAIL;
+    // Resend's testing sender works without a verified custom domain. Set
+    // RESEND_FROM_EMAIL to a verified sender when sending to arbitrary recipients.
+    const fromEmail = process.env.RESEND_FROM_EMAIL || "Trip <onboarding@resend.dev>";
 
-    if (!apiKey || !fromEmail) {
-      console.error("[send] Missing Resend configuration", {
+    if (!apiKey) {
+      console.error("[send] Missing Resend API key", {
         hasApiKey: Boolean(apiKey),
-        hasFromEmail: Boolean(fromEmail),
       });
       return errorResponse(
         {
           success: false,
-          error: "Email service is not configured. Set RESEND_API_KEY and RESEND_FROM_EMAIL.",
+          error: "Email service is not configured. Set RESEND_API_KEY.",
           code: "CONFIG_ERROR",
         },
         500
