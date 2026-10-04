@@ -32,18 +32,22 @@ export async function deliverCryptoEmail(data: SendEmailInput) {
 
   if (error) throw new Error(error.message || "Resend rejected the request");
 
-  try {
-    await prisma.sendLog.create({
-      data: { toEmail: data.receiverEmail, subject, messageId: result?.id, success: true },
-    });
-  } catch (logError) {
-    console.error("[qstash] Failed to persist send log:", logError);
+  if (process.env.DATABASE_URL) {
+    try {
+      await prisma.sendLog.create({
+        data: { toEmail: data.receiverEmail, subject, messageId: result?.id, success: true },
+      });
+    } catch (logError) {
+      console.error("[qstash] Failed to persist send log:", logError);
+    }
   }
 
   return { id: result?.id, subject };
 }
 
 export async function persistFailedDelivery(data: SendEmailInput, error: unknown) {
+  if (!process.env.DATABASE_URL) return;
+
   try {
     await prisma.sendLog.create({
       data: {
