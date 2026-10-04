@@ -65,7 +65,7 @@ export function mapResendError(message: string | undefined): {
       status: 502,
       code: "RESEND_ERROR",
       error:
-        "Sender email is not verified in Resend. Check RESEND_FROM_EMAIL.",
+        "Resend rejected the sender because its domain DNS is incomplete or the From domain does not match the verified domain. Complete every DNS record in Resend, then use a From address on that exact domain.",
     };
   }
 
