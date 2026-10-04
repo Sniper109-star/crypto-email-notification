@@ -51,6 +51,15 @@ export function mapResendError(message: string | undefined): {
     };
   }
 
+  if (msg.includes("sandbox") || msg.includes("account owner") || msg.includes("only deliver")) {
+    return {
+      status: 502,
+      code: "RESEND_ERROR",
+      error:
+        "Resend sandbox mode only delivers to the account owner's email. Verify your sending domain to deliver to other recipients.",
+    };
+  }
+
   if (msg.includes("domain") || msg.includes("not verified") || msg.includes("from")) {
     return {
       status: 502,
