@@ -20,7 +20,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid QStash signature" }, { status: 401 });
   }
 
-  const parsed = sendEmailSchema.safeParse(JSON.parse(body));
+  let payload: unknown;
+  try {
+    payload = JSON.parse(body);
+  } catch {
+    return NextResponse.json({ error: "Invalid workflow payload" }, { status: 400 });
+  }
+
+  const parsed = sendEmailSchema.safeParse(payload);
   if (!parsed.success) return NextResponse.json({ error: "Invalid workflow payload" }, { status: 400 });
 
   try {
