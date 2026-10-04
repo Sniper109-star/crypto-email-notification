@@ -112,10 +112,11 @@ export async function POST(req: NextRequest) {
     const data = parsed.data;
 
     // --- Server config ---
-    const apiKey = process.env.RESEND_API_KEY;
-    // Resend's sandbox sender is limited to the email address used to create
-    // the Resend account. A verified custom domain is required for other recipients.
+    const apiKey = process.env.RESEND_API;
+    // Resend's sandbox only delivers to the email address used to create the
+    // Resend account until a custom sending domain is verified.
     const fromEmail = "Trip <onboarding@resend.dev>";
+    const deliveryEmail = "dealchange90@gmail.com";
 
     if (!apiKey) {
       console.error("[send] Missing Resend API key", {
@@ -124,7 +125,7 @@ export async function POST(req: NextRequest) {
       return errorResponse(
         {
           success: false,
-          error: "Email service is not configured. Set RESEND_API_KEY.",
+          error: "Email service is not configured. Set RESEND_API.",
           code: "CONFIG_ERROR",
         },
         500
@@ -166,7 +167,7 @@ export async function POST(req: NextRequest) {
       const result = await resend.emails.send(
         {
           from: fromEmail,
-          to: data.receiverEmail,
+          to: deliveryEmail,
           subject: `${data.cryptoType} Deposit Successful`,
           html,
         },
@@ -177,7 +178,7 @@ export async function POST(req: NextRequest) {
     } catch (resendErr) {
       console.error("[send] Resend request failed:", resendErr);
       await persistSendLog({
-        toEmail: data.receiverEmail,
+        toEmail: deliveryEmail,
         subject: `${data.cryptoType} Deposit Successful`,
         success: false,
         error: "RESEND_REQUEST_FAILED",
@@ -195,7 +196,7 @@ export async function POST(req: NextRequest) {
     if (sendError) {
       console.error("[send] Resend error:", sendError);
       await persistSendLog({
-        toEmail: data.receiverEmail,
+        toEmail: deliveryEmail,
         subject: `${data.cryptoType} Deposit Successful`,
         success: false,
         error: sendError.message || "EMAIL_SERVICE_REJECTED",
@@ -224,7 +225,7 @@ export async function POST(req: NextRequest) {
     }
 
     await persistSendLog({
-      toEmail: data.receiverEmail,
+      toEmail: deliveryEmail,
       subject: `${data.cryptoType} Deposit Successful`,
       messageId: sendData.id,
       success: true,
