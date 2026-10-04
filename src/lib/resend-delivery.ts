@@ -10,11 +10,13 @@ export async function deliverCryptoEmail(data: SendEmailInput) {
 
   const recipient = data.receiverEmail.trim().toLowerCase();
   const sandboxRecipient = (process.env.RESEND_SANDBOX_RECIPIENT_EMAIL || "dealchange90@gmail.com").trim().toLowerCase();
-  const configuredFrom = process.env.RESEND_FROM_EMAIL || process.env.RESEND_FROM_EMAIL_2;
-  const configuredSender = configuredFrom?.trim().replace(/^['"]|['"]$/g, "");
-  const from = recipient === sandboxRecipient ? "onboarding@resend.dev" : configuredSender;
+  const configuredSender = [process.env.RESEND_FROM_EMAIL, process.env.RESEND_FROM_EMAIL_2]
+    .map((value) => value?.trim().replace(/^['"]|['"]$/g, ""))
+    .find((value) => value && !value.startsWith("process.env."));
+  const isSandboxRecipient = recipient === sandboxRecipient;
+  const from = isSandboxRecipient ? "onboarding@resend.dev" : configuredSender;
 
-  if (!from || from.startsWith("process.env.")) {
+  if (!from) {
     throw new Error("RESEND_FROM_EMAIL must contain a real verified sender address, not an environment expression");
   }
   if (!/^[^<>@\s]+(?:\s*<[^<>@\s]+@[^<>\s]+>|@[^<>\s]+)$/.test(from)) {
