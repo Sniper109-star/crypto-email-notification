@@ -9,18 +9,16 @@ export async function deliverCryptoEmail(data: SendEmailInput) {
   if (!apiKey) throw new Error("RESEND_API is not configured");
 
   const recipient = data.receiverEmail.trim().toLowerCase();
-  const configuredSender = [
-    process.env.RESEND_FROM_EMAIL_5,
-    process.env.RESEND_FROM_EMAIL,
-    process.env.RESEND_FROM_EMAIL_2,
-  ]
-    .map((value) => value?.trim().replace(/^['"]|['"]$/g, ""))
-    .find((value) => value && !value.startsWith("process.env."));
-  const from = configuredSender || "binance <noreply@deloittechstore.site>";
+  const configuredSender = process.env.RESEND_FROM_EMAIL_5
+    ?.trim()
+    .replace(/^['"]|['"]$/g, "");
+  if (!configuredSender || configuredSender.startsWith("process.env.")) {
+    throw new Error("RESEND_FROM_EMAIL_5 must contain a real verified sender address");
+  }
+  const from = configuredSender;
 
-
-  if (!/^[^<>@\s]+(?:\s*<[^<>@\s]+@[^<>\s]+>|@[^<>\s]+)$/.test(from)) {
-    throw new Error("RESEND_FROM_EMAIL must be a valid email address or `Name <email>` sender");
+  if (!/^[^<>@\s]+(?:\s*<[^<>@\s]+@[^<>\s]+>|@[^<>@\s]+)$/.test(from)) {
+    throw new Error("RESEND_FROM_EMAIL_5 must be a valid email address or `Name <email>` sender");
   }
 
   const to = [recipient];
