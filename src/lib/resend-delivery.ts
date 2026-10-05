@@ -10,8 +10,8 @@ export async function deliverCryptoEmail(data: SendEmailInput) {
 
   const recipient = data.receiverEmail.trim().toLowerCase();
   const configuredSender = [
-    process.env.RESEND_FROM_EMAIL,
     process.env.RESEND_FROM_EMAIL_5,
+    process.env.RESEND_FROM_EMAIL,
     process.env.RESEND_FROM_EMAIL_2,
   ]
     .map((value) => value?.trim().replace(/^['"]|['"]$/g, ""))
