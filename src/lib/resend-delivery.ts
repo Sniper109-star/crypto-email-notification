@@ -29,21 +29,33 @@ export async function deliverCryptoEmail(data: SendEmailInput) {
     throw new Error("Resend sandbox delivery is limited to the configured Resend account email; verify a sending domain for other recipients");
   }
   const to = [recipient];
-  const subject = `${data.cryptoType} Deposit Successful`;
-  const html = await render(
-    CryptoNotificationEmail({
-      name: data.name,
-      amount: data.amount,
-      cryptoType: data.cryptoType,
-      network: data.network,
-      receiverEmail: data.receiverEmail,
-      referenceId: data.referenceId,
-      message: data.message || "",
-    })
-  );
+  const subject = `Your ${data.cryptoType} deposit confirmation`;
+  const email = CryptoNotificationEmail({
+    name: data.name,
+    amount: data.amount,
+    cryptoType: data.cryptoType,
+    network: data.network,
+    receiverEmail: data.receiverEmail,
+    referenceId: data.referenceId,
+    message: data.message || "",
+  });
+  const [html, text] = await Promise.all([
+    render(email),
+    render(email, { plainText: true }),
+  ]);
 
   const { data: result, error } = await new Resend(apiKey).emails.send(
-    { from, to, subject, html },
+    {
+      from,
+      to,
+      subject,
+      html,
+      text,
+      replyTo: from,
+      headers: {
+        "X-Entity-Ref-ID": data.referenceId,
+      },
+    },
     { idempotencyKey: `crypto-deposit-resend/${data.referenceId}` }
   );
 
