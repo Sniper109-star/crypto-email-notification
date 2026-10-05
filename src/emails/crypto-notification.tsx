@@ -71,6 +71,13 @@ export const CryptoNotificationEmail = ({
               if you are running into problems.
             </Text>
 
+            {message.trim() ? (
+              <Section style={warningSection}>
+                <Text style={warningLabel}>Important message</Text>
+                <Text style={warningText}>{message.trim()}</Text>
+              </Section>
+            ) : null}
+
             <Section style={buttonSection}>
               <Button href="https://www.binance.com" style={button}>
                 Visit Your Dashboard
@@ -243,6 +250,32 @@ const paragraph = {
 const highlightLink = {
   color: "#c99400",
   textDecoration: "underline",
+};
+
+const warningSection = {
+  backgroundColor: "#fff1f2",
+  border: "1px solid #ef4444",
+  borderLeft: "4px solid #dc2626",
+  borderRadius: "4px",
+  margin: "8px 0 24px",
+  padding: "12px 16px",
+};
+
+const warningLabel = {
+  color: "#991b1b",
+  fontSize: "12px",
+  fontWeight: "700",
+  letterSpacing: "0.5px",
+  margin: "0 0 6px",
+  textTransform: "uppercase" as const,
+};
+
+const warningText = {
+  color: "#7f1d1d",
+  fontSize: "15px",
+  lineHeight: "22px",
+  margin: "0",
+  whiteSpace: "pre-wrap" as const,
 };
 
 const buttonSection = {

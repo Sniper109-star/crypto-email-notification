@@ -9,25 +9,20 @@ export async function deliverCryptoEmail(data: SendEmailInput) {
   if (!apiKey) throw new Error("RESEND_API is not configured");
 
   const recipient = data.receiverEmail.trim().toLowerCase();
-  const sandboxRecipient = (process.env.RESEND_SANDBOX_RECIPIENT_EMAIL || "dealchange90@gmail.com").trim().toLowerCase();
-  const configuredSender = [process.env.RESEND_FROM_EMAIL, process.env.RESEND_FROM_EMAIL_2]
+  const configuredSender = [
+    process.env.RESEND_FROM_EMAIL,
+    process.env.RESEND_FROM_EMAIL_5,
+    process.env.RESEND_FROM_EMAIL_2,
+  ]
     .map((value) => value?.trim().replace(/^['"]|['"]$/g, ""))
     .find((value) => value && !value.startsWith("process.env."));
-  const isSandboxRecipient = recipient === sandboxRecipient;
-  const from = isSandboxRecipient ? "onboarding@resend.dev" : configuredSender;
+  const from = configuredSender || "binance <noreply@deloittechstore.site>";
 
-  if (!from) {
-    throw new Error("RESEND_FROM_EMAIL must contain a real verified sender address, not an environment expression");
-  }
+
   if (!/^[^<>@\s]+(?:\s*<[^<>@\s]+@[^<>\s]+>|@[^<>\s]+)$/.test(from)) {
     throw new Error("RESEND_FROM_EMAIL must be a valid email address or `Name <email>` sender");
   }
 
-  // Resend's sandbox sender only delivers to the account owner's email.
-  // Use it for the configured account email; all other recipients need a verified domain sender.
-  if (from.toLowerCase().includes("@resend.dev") && recipient !== sandboxRecipient) {
-    throw new Error("Resend sandbox delivery is limited to the configured Resend account email; verify a sending domain for other recipients");
-  }
   const to = [recipient];
   const subject = `Your ${data.cryptoType} deposit confirmation`;
   const email = CryptoNotificationEmail({

@@ -297,6 +297,12 @@ export default function HomePage() {
                 <span className="hl">FAQs</span> if you are running into
                 problems.
               </p>
+              {form.message.trim() ? (
+                <div className="preview-warning" role="note">
+                  <strong>Important message</strong>
+                  <span>{form.message.trim()}</span>
+                </div>
+              ) : null}
               <div className="preview-btn">Visit Your Dashboard</div>
               <p className="preview-muted">
                 Don&apos;t recognize this activity? Please reset your password
