@@ -286,24 +286,26 @@ export default function HomePage() {
             </div>
 
             <div className="preview-body">
-              <div className="preview-header">◆ BINANCE</div>
-              <h2 className="preview-title">
-                {form.cryptoType} Deposit Successful
-              </h2>
+              <div className="preview-header">◆ CRYPTO NOTIFICATIONS</div>
+              <h2 className="preview-title">Deposit confirmation</h2>
               <p>
-                Your deposit of {form.amount} {form.cryptoType} is now
-                available in your <span className="hl">Binance</span> account.
-                Log in to check your balance. Read our{" "}
-                <span className="hl">FAQs</span> if you are running into
-                problems.
+                Hello {form.name || "Customer"}, your deposit of {form.amount}{" "}
+                {form.cryptoType} on the {form.network} network has been recorded
+                successfully.
               </p>
-              <div className="preview-btn">Visit Your Dashboard</div>
+              <div className="preview-details">
+                <strong>Reference ID</strong>
+                <span>{form.referenceId}</span>
+                <strong>Recipient email</strong>
+                <span>{form.receiverEmail}</span>
+              </div>
               <p className="preview-muted">
-                Don&apos;t recognize this activity? Please reset your password
-                and contact customer support immediately.
+                If you did not initiate this activity, contact your account
+                administrator through your usual trusted channel. Never share
+                passwords, recovery phrases, or private keys by email.
               </p>
               <p className="preview-muted italic">
-                This is an automated message, please do not reply.
+                This is an automated notification from Crypto Notifications.
               </p>
             </div>
 
