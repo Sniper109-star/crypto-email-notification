@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: "Crypto Notification Console",
   description: "Preview and send secure crypto transaction email notifications.",
   applicationName: "Crypto Notification Console",
-  keywords: ["crypto", "email", "transaction notification", "deposit confirmation"],
+  keywords: ["crypto", "email", "transaction notification", "Binance"],
 };
 
 export default function RootLayout({

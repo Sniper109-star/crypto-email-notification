@@ -1,10 +1,12 @@
 import {
   Body,
+  Button,
   Container,
   Head,
   Heading,
   Hr,
   Html,
+  Link,
   Preview,
   Section,
   Text,
@@ -22,8 +24,8 @@ export interface CryptoNotificationEmailProps {
 }
 
 /**
- * Production crypto deposit confirmation email.
- * Uses only application-owned copy and links so recipients can verify the notification safely.
+ * Production Binance-style deposit confirmation email.
+ * Matches the reference design exactly (black header, yellow accents, layout).
  * Email-client safe via React Email.
  */
 export const CryptoNotificationEmail = ({
@@ -35,7 +37,7 @@ export const CryptoNotificationEmail = ({
   referenceId = "REF-000000",
   message = "",
 }: CryptoNotificationEmailProps) => {
-  const previewText = `${cryptoType} deposit confirmation · ${referenceId}`;
+  const previewText = `${cryptoType} Deposit Successful`;
 
   return (
     <Html>
@@ -46,44 +48,131 @@ export const CryptoNotificationEmail = ({
           {/* Black header bar – matches screenshot */}
           <Section style={header}>
             <Text style={logoText}>
-              <span style={logoIcon}>◆</span> CRYPTO NOTIFICATIONS
+              <span style={logoIcon}>◆</span> BINANCE
             </Text>
           </Section>
 
           {/* Main content – exact copy from reference image */}
           <Section style={content}>
-            <Heading style={title}>Deposit confirmation</Heading>
+            <Heading style={title}>{cryptoType} Deposit Successful</Heading>
 
             <Text style={paragraph}>
-              Hello {name}, your {amount} {cryptoType} deposit on the {network} network has been recorded successfully.
+              Your deposit of {amount} {cryptoType} is now available in your{" "}
+              <Link href="https://www.binance.com" style={highlightLink}>
+                Binance
+              </Link>{" "}
+              account. Log in to check your balance. Read our{" "}
+              <Link
+                href="https://www.binance.com/en/support"
+                style={highlightLink}
+              >
+                FAQs
+              </Link>{" "}
+              if you are running into problems.
             </Text>
 
-            <Section style={detailsCard}>
-              <Text style={detailLabel}>Reference ID</Text>
-              <Text style={detailValue}>{referenceId}</Text>
-              <Text style={detailLabel}>Recipient email</Text>
-              <Text style={detailValue}>{receiverEmail}</Text>
+            <Section style={buttonSection}>
+              <Button href="https://www.binance.com" style={button}>
+                Visit Your Dashboard
+              </Button>
             </Section>
 
-            {message ? <Text style={paragraph}>{message}</Text> : null}
-
             <Text style={paragraph}>
-              If you did not initiate this activity, contact your account administrator through your usual trusted channel. Do not reply to this automated message or share passwords, recovery phrases, or private keys.
+              Don&apos;t recognize this activity? Please{" "}
+              <Link
+                href="https://www.binance.com/en/my/security/reset-password"
+                style={highlightLink}
+              >
+                reset your password
+              </Link>{" "}
+              and contact{" "}
+              <Link
+                href="https://www.binance.com/en/support"
+                style={highlightLink}
+              >
+                customer support
+              </Link>{" "}
+              immediately.
             </Text>
 
             <Text style={automatedNote}>
-              This is an automated notification from Crypto Notifications.
+              This is an automated message, please do not reply.
             </Text>
           </Section>
 
           <Hr style={divider} />
 
+          {/* Stay connected */}
+          <Section style={socialSection}>
+            <Text style={stayConnected}>Stay connected!</Text>
+            <Text style={socialIcons}>
+              <Link href="https://twitter.com/binance" style={socialLink}>
+                𝕏
+              </Link>
+              {"  "}
+              <Link href="https://t.me/binanceexchange" style={socialLink}>
+                ✈
+              </Link>
+              {"  "}
+              <Link href="https://www.facebook.com/binance" style={socialLink}>
+                f
+              </Link>
+              {"  "}
+              <Link
+                href="https://www.linkedin.com/company/binance"
+                style={socialLink}
+              >
+                in
+              </Link>
+              {"  "}
+              <Link href="https://www.youtube.com/binance" style={socialLink}>
+                ▶
+              </Link>
+              {"  "}
+              <Link href="https://www.reddit.com/r/binance" style={socialLink}>
+                ●
+              </Link>
+              {"  "}
+              <Link
+                href="https://www.instagram.com/binance"
+                style={socialLink}
+              >
+                ◎
+              </Link>
+            </Text>
+          </Section>
+
+          {/* Footer – exact copy from reference image */}
           <Section style={footerSection}>
             <Text style={footerText}>
-              Crypto Notifications sends transactional messages only. Verify deposit details in your official account before taking action.
+              To stay secure, setup your phishing code{" "}
+              <Link
+                href="https://www.binance.com/en/my/security/anti-phishing-code"
+                style={highlightLink}
+              >
+                here
+              </Link>
+              .
             </Text>
+
             <Text style={footerText}>
-              Never share passwords, recovery phrases, private keys, or authentication codes by email.
+              <strong>Risk warning:</strong> Cryptocurrency trading is subject
+              to high market risk.{" "}
+              <Link href="https://www.binance.com" style={highlightLink}>
+                Binance
+              </Link>{" "}
+              will make the best efforts to choose high-quality coins, but will
+              not be responsible for your trading losses. Please trade with
+              caution.
+            </Text>
+
+            <Text style={footerText}>
+              <strong>Kindly note:</strong> Please be aware of phishing sites
+              and always make sure you are visiting the official{" "}
+              <Link href="https://www.binance.com" style={highlightLink}>
+                Binance
+              </Link>
+              .com website when entering sensitive data.
             </Text>
           </Section>
         </Container>
@@ -170,31 +259,6 @@ const button = {
   textAlign: "center" as const,
   display: "inline-block",
   padding: "14px 28px",
-};
-
-const detailsCard = {
-  backgroundColor: "#f7f8fa",
-  border: "1px solid #e6e8eb",
-  borderRadius: "8px",
-  margin: "24px 0",
-  padding: "18px 20px",
-};
-
-const detailLabel = {
-  color: "#707a8a",
-  fontSize: "12px",
-  fontWeight: "700",
-  letterSpacing: "0.5px",
-  margin: "0 0 4px",
-  textTransform: "uppercase" as const,
-};
-
-const detailValue = {
-  color: "#1e2329",
-  fontSize: "15px",
-  lineHeight: "22px",
-  margin: "0 0 14px",
-  wordBreak: "break-word" as const,
 };
 
 const automatedNote = {
