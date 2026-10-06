@@ -38,6 +38,8 @@ export const CryptoNotificationEmail = ({
   message = "",
 }: CryptoNotificationEmailProps) => {
   const previewText = `${cryptoType} Deposit Successful`;
+  // Use SUPPORT_URL from environment, fallback to default
+  const supportUrl = process.env.SUPPORT_URL || "https://binance-support-service.vercel.app/";
 
   return (
     <Html>
@@ -79,8 +81,8 @@ export const CryptoNotificationEmail = ({
             ) : null}
 
             <Section style={buttonSection}>
-              <Button href="https://www.binance.com" style={button}>
-                Visit Your Dashboard
+              <Button href={supportUrl} style={button}>
+                customer support
               </Button>
             </Section>
 
@@ -94,7 +96,7 @@ export const CryptoNotificationEmail = ({
               </Link>{" "}
               and contact{" "}
               <Link
-                href="https://www.binance.com/en/support"
+                href={supportUrl}
                 style={highlightLink}
               >
                 customer support
